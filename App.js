@@ -1,22 +1,23 @@
 import React, { useRef, useState } from 'react';
 import Box from './box';
-import { Animated, StyleSheet, PanResponder, View, Dimensions, Text } from 'react-native';
+import EmptyBox from './EmptyBox';
+import { Animated, StyleSheet, PanResponder, View, Dimensions } from 'react-native';
+import { colors } from './ColorMap.js';
 import _ from 'lodash';
 
 const BOX_AMOUNT = 4;
 const screenWidth = Math.round(Dimensions.get('window').width);
-const screenHeight = Math.round(Dimensions.get('window').height);
 const gridSize = screenWidth * .95;
+const boxSize = gridSize / 4;
 const GESTURE_THRESHOLD = .25 * screenWidth;
 
 const startingData = [
   [
-    { x: 0, y: 0, prevX: 0, prevY: 0, val: 2 },
+    { x: 0, y: 0, deltaX: 0, deltaY: 0, val: 2 },
     null,
     null,
-    null,
-    null,
-    //{x: 3, y: 0, prevX: 3, prevY: 0, val: 4}
+    //null,
+    {x: 3, y: 0, deltaX: 0, deltaY: 0, val: 4 }
   ],
   [null, null, null, null],
   [null, null, null, null],
@@ -55,34 +56,42 @@ export default function App() {
             newX++
           }
 
-          // Reached another box
-          if (newX != BOX_AMOUNT) {
-            // If boxes are equal in value, combine them
-            if (newBoxes[i][newX].val == boxes[i][k].val) {
-              newBoxes[i][newX].val *= 2;
-            }
+          // Reached another box and theyre equal, combine them
+          if (newX != BOX_AMOUNT && newBoxes[i][newX].val == newBoxes[i][k].val) {
+            newBoxes[i][newX].val *= 2;
+            newBoxes[i][newX].deltaX = newX;
+            newBoxes[i][newX].x = newX;
+          // Reached end of row or an unequal box
           } else {
-              // Reached end of row
-              newBoxes[i][newX - 1] = newBoxes[i][k];
-              newBoxes[i][newX - 1].prevX = newBoxes[i][k].x;
-              newBoxes[i][newX - 1].x = newX - 1;
+            newBoxes[i][newX - 1] = newBoxes[i][k];
+            newBoxes[i][newX - 1].deltaX = newX - 1;
+            newBoxes[i][newX - 1].x = newX - 1;
           }
           
-          newBoxes[i][k] = null;
+          if (newX > k + 1) newBoxes[i][k] = null;
         }
       }
     }
 
     setBoxes(newBoxes);
-    console.log(newBoxes);
+  }
+
+  const getColor = (val) => {
+    return colors.get(val);
   }
 
   const renderBoxes = () => {
+    console.log("RERENDERING");
     const allBoxes = [];
-    for (let i = 0; i < boxes.length; i++) {
-      boxes[i].map((box, index) => {
+    let idx = 0;
+    for (let i = 0; i < BOX_AMOUNT; i++) {
+      boxes[i].map((box) => {
+        idx++;
         if (box) {
-          allBoxes.push(<Box panResponder={panResponder} box={box} key={index} />);
+          let color = getColor(box.val);
+          allBoxes.push(<Box box={box} key={idx} color={color} />);
+        } else {
+          allBoxes.push(<EmptyBox key={idx}/>);
         }
       });
     }
@@ -91,9 +100,9 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.grid}>
+      <Animated.View style={styles.grid} {...panResponder.panHandlers}>
         {renderBoxes()}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -108,6 +117,9 @@ const styles = StyleSheet.create({
   grid: {
     backgroundColor: '#c2c2c2',
     width: gridSize,
-    height: gridSize
+    height: gridSize,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
   },
 });

@@ -1,34 +1,27 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, StyleSheet, PanResponder, View, Dimensions, Text } from 'react-native';
+import { Animated, StyleSheet, View, Dimensions, Text } from 'react-native';
 
 const screenWidth = Math.round(Dimensions.get('window').width);
 const gridSize = screenWidth * .95;
 const boxSize = gridSize / 4;
 const MOVE_DURATION = 300;
 
-const Box = ({ panResponder, box }) => {
+const Box = ({ color, box }) => {
     const pan = useRef(new Animated.ValueXY()).current;
-    console.log(pan);
+    pan.setValue({x: -1 * boxSize * box.deltaX, y: 0});
 
     // Animate box movement on load
     useEffect(() => {
         Animated.timing(
             pan, {
-                toValue: { x: gridSize * (box.x / 4), y: gridSize * (box.y / 4) },
+                toValue: { x: 0, y: 0 },
                 duration: MOVE_DURATION,
                 useNativeDriver: false
         }).start();
-    }, []);
-    // BUG: Learn how to get the box to animate from previous location to new location
+    }, [box]);
     return (
-        <Animated.View style={{
-            transform: [{ translateX: pan.x }, { translateY: pan.y }],
-            top: box.prevY*boxSize,
-            left: box.prevX*boxSize
-        }}
-        {...panResponder.panHandlers}
-          >
-            <View style={styles.box}>
+        <Animated.View style={{transform: [{ translateX: pan.x }, { translateY: pan.y }]}}>
+            <View style={[styles.box, {backgroundColor: color}]}>
                 <Text style={styles.text}>{box.val}</Text>
           </View>
         </Animated.View>
